@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAKE 10 — 数学記号なんでもあり</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --panel: #12121a;
+    --border: #2a2a3e;
+    --accent: #e8ff47;
+    --accent2: #ff4757;
+    --accent3: #00d2ff;
+    --text: #f0f0f8;
+    --muted: #5a5a7a;
+    --success: #47ff8a;
+    --card: #1a1a28;
+    --abs: #ff9f43;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+
+  /* Floating math symbols in background */
+  .bg-symbols {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+  }
+
+  .bg-sym {
+    position: absolute;
+    font-family: 'Space Mono', monospace;
+    color: rgba(232,255,71,0.04);
+    font-size: 6rem;
+    font-weight: 700;
+    animation: floatSym 20s linear infinite;
+    user-select: none;
+  }
+
+  @keyframes floatSym {
+    0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-200px) rotate(360deg); opacity: 0; }
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 2rem 1rem 4rem;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 3.5rem;
+    font-weight: 700;
+    letter-spacing: -2px;
+    line-height: 1;
+    position: relative;
+    display: inline-block;
+  }
+
+  .logo span.make { color: var(--muted); }
+  .logo span.ten {
+    color: var(--accent);
+    text-shadow: 0 0 30px rgba(232,255,71,0.5);
+  }
+
+  .subtitle {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-top: 0.5rem;
+    font-family: 'Space Mono', monospace;
+  }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+  }
+
+  .stat {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 0.5rem 1.2rem;
+    text-align: center;
+    clip-path: polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%);
+  }
+
+  .stat-label {
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  /* Number cards */
+  .numbers-section {
+    margin-bottom: 1.5rem;
+  }
+
+  .section-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 0.75rem;
+  }
+
+  .numbers-grid {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .num-card {
+    width: 72px;
+    height: 72px;
+    background: var(--card);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Space Mono', monospace;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    clip-path: polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%);
+    user-select: none;
+  }
+
+  .num-card:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(232,255,71,0.2);
+  }
+
+  .num-card.used {
+    opacity: 0.25;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  .num-card.selected {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232,255,71,0.1);
+    box-shadow: 0 0 20px rgba(232,255,71,0.3);
+  }
+
+  /* Expression area */
+  .expr-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    min-height: 80px;
+    position: relative;
+  }
+
+  .expr-section::before {
+    content: 'EXPRESSION';
+    position: absolute;
+    top: -0.5rem;
+    left: 1rem;
+    background: var(--card);
+    padding: 0 0.5rem;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 3px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .expr-display {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    min-height: 2.5rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    word-break: break-all;
+  }
+
+  .expr-token {
+    padding: 2px 6px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.1s;
+  }
+
+  .expr-token.num-token {
+    color: var(--accent3);
+    background: rgba(0,210,255,0.1);
+    border: 1px solid rgba(0,210,255,0.3);
+  }
+
+  .expr-token.abs-token {
+    color: var(--muted);
+  }
+
+  .expr-token.op-token {
+    color: var(--accent);
+    background: rgba(232,255,71,0.08);
+  }
+
+  .expr-token.paren-token {
+    color: var(--muted);
+  }
+
+  .expr-token:hover {
+    opacity: 0.6;
+  }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 3px;
+    height: 1.6rem;
+    background: var(--accent);
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Operator buttons */
+  .ops-section {
+    margin-bottom: 1rem;
+  }
+
+  .ops-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+    gap: 0.5rem;
+  }
+
+  .op-btn {
+    height: 48px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    user-select: none;
+  }
+
+  .op-btn:hover {
+    background: rgba(232,255,71,0.1);
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(232,255,71,0.15);
+  }
+
+  .op-btn:active { transform: translateY(0); }
+
+  .op-btn .op-hint {
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+    font-size: 0.45rem;
+    color: var(--muted);
+    letter-spacing: 0;
+  }
+
+  .op-btn.paren-btn { color: var(--accent); }
+  .op-btn.special-btn { color: var(--accent3); border-color: rgba(0,210,255,0.3); }
+
+  /* Result display */
+  .result-display {
+    text-align: center;
+    padding: 0.75rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    min-height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .result-val {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--muted);
+    transition: all 0.3s;
+  }
+
+  .result-val.correct {
+    color: var(--success);
+    text-shadow: 0 0 20px rgba(71,255,138,0.5);
+    animation: pulse 0.5s ease;
+  }
+
+  .result-val.wrong { color: var(--accent2); }
+
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.3); }
+    100% { transform: scale(1); }
+  }
+
+  .result-arrow { color: var(--muted); }
+
+  /* Action buttons */
+  .actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    flex: 1;
+    min-width: 100px;
+    padding: 0.75rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border: 2px solid;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .btn:hover::after { opacity: 0.08; }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  .btn-primary:hover {
+    box-shadow: 0 0 20px rgba(232,255,71,0.4);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--muted);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--text);
+    color: var(--text);
+  }
+
+  .btn-danger {
+    background: transparent;
+    border-color: rgba(255,71,87,0.4);
+    color: var(--accent2);
+  }
+
+  .btn-danger:hover {
+    border-color: var(--accent2);
+    box-shadow: 0 0 15px rgba(255,71,87,0.2);
+  }
+
+  /* Reference panel */
+  .ref-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .ref-panel summary {
+    cursor: pointer;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    font-family: 'Space Mono', monospace;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    user-select: none;
+  }
+
+  .ref-panel summary::after {
+    content: '▼';
+    font-size: 0.5rem;
+    transition: transform 0.2s;
+  }
+
+  .ref-panel[open] summary::after { transform: rotate(180deg); }
+
+  .ref-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+    margin-top: 1rem;
+    font-size: 0.75rem;
+  }
+
+  .ref-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .ref-sym {
+    color: var(--accent);
+    width: 40px;
+  }
+
+  /* Success overlay */
+  .success-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(8px);
+  }
+
+  .success-overlay.show {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .success-box {
+    background: var(--card);
+    border: 2px solid var(--success);
+    padding: 2.5rem;
+    text-align: center;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 0 60px rgba(71,255,138,0.3);
+    animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes slideIn {
+    from { transform: scale(0.5) translateY(50px); opacity: 0; }
+    to { transform: scale(1) translateY(0); opacity: 1; }
+  }
+
+  .success-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--success);
+    text-shadow: 0 0 30px rgba(71,255,138,0.5);
+    margin-bottom: 0.5rem;
+  }
+
+  .success-expr {
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    color: var(--accent);
+    margin: 1rem 0;
+    padding: 0.75rem;
+    background: rgba(232,255,71,0.05);
+    border: 1px solid rgba(232,255,71,0.2);
+    word-break: break-all;
+  }
+
+  .success-score {
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    font-size: 0.8rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* History */
+  .history-section {
+    margin-top: 1.5rem;
+  }
+
+  .history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+  }
+
+  .history-list::-webkit-scrollbar { width: 3px; }
+  .history-list::-webkit-scrollbar-thumb { background: var(--border); }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--card);
+    border-left: 2px solid var(--success);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.78rem;
+  }
+
+  .history-nums { color: var(--accent3); flex-shrink: 0; }
+  .history-expr { color: var(--text); flex: 1; word-break: break-all; }
+  .history-score { color: var(--muted); flex-shrink: 0; }
+
+  /* Confetti */
+  .confetti-piece {
+    position: fixed;
+    width: 8px;
+    height: 8px;
+    border-radius: 1px;
+    pointer-events: none;
+    z-index: 200;
+    animation: confettiFall linear forwards;
+  }
+
+  @keyframes confettiFall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+
+  .diff-select {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;
+  }
+
+  .diff-btn {
+    padding: 0.4rem 1rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+
+  .diff-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232,255,71,0.08);
+  }
+
+  .diff-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Ops tabs */
+  .ops-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ops-tab {
+    padding: 0.35rem 0.9rem;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.15s;
+    text-transform: uppercase;
+    position: relative;
+    bottom: -1px;
+  }
+
+  .ops-tab.active {
+    border-color: var(--border);
+    border-bottom-color: var(--bg);
+    color: var(--accent);
+    background: var(--bg);
+  }
+
+  .ops-tab:hover:not(.active) { color: var(--text); }
+
+  .ops-panel { display: none; }
+  .ops-panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="bg-symbols" id="bgSymbols"></div>
+
+<div class="wrapper">
+  <header>
+    <div class="logo">
+      <span class="make">MAKE</span> <span class="ten">10</span>
+    </div>
+    <div class="subtitle">数学記号なんでもあり パズル</div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-label">SCORE</div>
+      <div class="stat-value" id="scoreVal">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">STREAK</div>
+      <div class="stat-value" id="streakVal">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">SOLVED</div>
+      <div class="stat-value" id="solvedVal">0</div>
+    </div>
+  </div>
+
+  <!-- Difficulty -->
+  <div class="diff-select">
+    <button class="diff-btn active" onclick="setDiff('easy')">EASY</button>
+    <button class="diff-btn" onclick="setDiff('normal')">NORMAL</button>
+    <button class="diff-btn" onclick="setDiff('hard')">HARD</button>
+  </div>
+
+  <!-- Numbers -->
+  <div class="numbers-section">
+    <div class="section-label">■ 使用する数字 (クリックして式に追加)</div>
+    <div class="numbers-grid" id="numbersGrid"></div>
+  </div>
+
+  <!-- Expression -->
+  <div class="expr-section">
+    <div class="expr-display" id="exprDisplay">
+      <span class="cursor-blink"></span>
+    </div>
+  </div>
+
+  <!-- Result -->
+  <div class="result-display">
+    <span style="color:var(--muted); font-family:'Space Mono',monospace; font-size:0.8rem;">結果</span>
+    <span class="result-arrow">→</span>
+    <span class="result-val" id="resultVal">—</span>
+    <span class="result-arrow" id="targetArrow">→</span>
+    <span style="color:var(--muted); font-family:'Space Mono',monospace;">TARGET: <span style="color:var(--accent)" id="targetDisplay">10</span></span>
+  </div>
+
+  <!-- Operators -->
+  <div class="ops-section">
+    <div class="section-label">■ 演算子・記号</div>
+    <div class="ops-tabs">
+      <button class="ops-tab active" onclick="switchOpsTab('main', this)">基本・関数</button>
+      <button class="ops-tab" onclick="switchOpsTab('extra', this)">その他の数学記号</button>
+    </div>
+    <div class="ops-panel active" id="opsPanel-main">
+      <div class="ops-grid" id="opsGrid"></div>
+    </div>
+    <div class="ops-panel" id="opsPanel-extra">
+      <div class="ops-grid" id="opsGridExtra"></div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="actions">
+    <button class="btn btn-danger" onclick="deleteLast()">◀ DEL</button>
+    <button class="btn btn-ghost" onclick="clearAll()">CLR</button>
+    <button class="btn btn-primary" onclick="checkAnswer()">CHECK ✓</button>
+    <button class="btn btn-ghost" onclick="newPuzzle()">NEW ↻</button>
+  </div>
+
+  <!-- Reference -->
+  <details class="ref-panel">
+    <summary>■ 記号リファレンス</summary>
+    <div class="ref-grid" id="refGrid"></div>
+  </details>
+
+  <!-- History -->
+  <div class="history-section" id="historySection" style="display:none">
+    <div class="section-label" style="margin-bottom:0.75rem">■ クリア履歴</div>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+  <!-- How to play -->
+  <div style="margin-top:2rem; border-top:1px solid var(--border); padding-top:1.5rem;">
+    <div class="section-label" style="margin-bottom:1rem">■ 遊び方</div>
+    <div style="font-size:0.82rem; color:var(--muted); line-height:1.9; display:flex; flex-direction:column; gap:0.6rem;">
+      <div><span style="color:var(--accent); font-family:'Space Mono',monospace;">① </span>表示された数字を<span style="color:var(--text)">すべて使って</span>、計算結果が <span style="color:var(--accent); font-family:'Space Mono',monospace;">10</span> になる式を作ろう。</div>
+      <div><span style="color:var(--accent); font-family:'Space Mono',monospace;">② </span>数字カードをクリックして式に追加し、演算子ボタンで記号を組み合わせる。</div>
+      <div><span style="color:var(--accent); font-family:'Space Mono',monospace;">③ </span>式が完成したら <span style="color:var(--text)">CHECK ✓</span> を押して答え合わせ。</div>
+      <div><span style="color:var(--accent); font-family:'Space Mono',monospace;">④ </span>式中のトークンをクリックすると、その部分を削除できる。<span style="color:var(--text)">◀ DEL</span> で末尾から1つずつ削除、<span style="color:var(--text)">CLR</span> で全消し。</div>
+      <div><span style="color:var(--accent); font-family:'Space Mono',monospace;">⑤ </span>難易度は <span style="color:var(--text)">EASY / NORMAL / HARD</span> の3段階。数字の範囲が広いほど難しい。</div>
+      <div style="margin-top:0.4rem; padding:0.75rem 1rem; background:var(--card); border-left:2px solid var(--accent);">
+        <span style="color:var(--accent); font-family:'Space Mono',monospace; font-size:0.7rem; letter-spacing:2px;">SCORE BONUS</span><br>
+        <span style="font-size:0.78rem;">√・log・P(n,r)・C(n,r) などの複雑な記号を使うとボーナス点あり。連続正解でストリークボーナスも！</span>
+      </div>
+      <div style="margin-top:0.2rem; color: var(--muted); font-size:0.75rem; font-family:'Space Mono',monospace;">
+        キーボード: 数字キーで数字入力 / + - * / ^ % で演算子 / Enter でCHECK / Backspaceでひとつ削除 / Escで全消し / Nで新問題
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Success overlay -->
+<div class="success-overlay" id="successOverlay">
+  <div class="success-box">
+    <div class="success-title">🎉 CORRECT!</div>
+    <div style="color:var(--muted); font-size:0.8rem; margin-bottom:0.5rem; font-family:'Space Mono',monospace;">YOUR EXPRESSION</div>
+    <div class="success-expr" id="successExpr"></div>
+    <div class="success-score" id="successScore"></div>
+    <button class="btn btn-primary" style="width:100%" onclick="nextPuzzle()">NEXT PUZZLE →</button>
+  </div>
+</div>
+
+<script>
+// ========== CONFIG ==========
+const DIFFICULTIES = {
+  easy:   { count: 4, range: [1, 9],  target: 10 },
+  normal: { count: 4, range: [1, 13], target: 10 },
+  hard:   { count: 5, range: [1, 20], target: 10 },
+};
+
+const OPERATORS = [
+  { sym: '+',   label: '+',    hint: '加算',   type: 'basic' },
+  { sym: '-',   label: '−',    hint: '減算',   type: 'basic' },
+  { sym: '*',   label: '×',    hint: '乗算',   type: 'basic' },
+  { sym: '/',   label: '÷',    hint: '除算',   type: 'basic' },
+  { sym: '^',   label: '^',    hint: 'べき乗',  type: 'basic' },
+  { sym: '(',   label: '(',    hint: '',       type: 'paren', cls:'paren-btn' },
+  { sym: ')',   label: ')',    hint: '',       type: 'paren', cls:'paren-btn' },
+  { sym: 'sqrt(',  label: '√',    hint: '平方根',  type: 'func', cls:'special-btn' },
+  { sym: 'cbrt(',  label: '∛',    hint: '立方根',  type: 'func', cls:'special-btn' },
+  { sym: 'log(',   label: 'log',  hint: '常用対数', type: 'func', cls:'special-btn' },
+  { sym: 'ln(',    label: 'ln',   hint: '自然対数', type: 'func', cls:'special-btn' },
+  { sym: 'sin(',   label: 'sin',  hint: '正弦(Rad)', type: 'func', cls:'special-btn' },
+  { sym: 'cos(',   label: 'cos',  hint: '余弦(Rad)', type: 'func', cls:'special-btn' },
+  { sym: 'tan(',   label: 'tan',  hint: '正接(Rad)', type: 'func', cls:'special-btn' },
+  { sym: 'abs(',   label: '|x|',  hint: '絶対値',  type: 'func', cls:'special-btn' },
+  { sym: '%',      label: 'mod',   hint: '剰余',   type: 'basic' },
+  { sym: '!',      label: 'n!',    hint: '階乗',   type: 'postfix', cls:'special-btn' },
+];
+
+const EXTRA_OPERATORS = [
+  { sym: 'asin(',  label: 'sin⁻¹', hint: '逆sin',  type: 'func', cls:'special-btn' },
+  { sym: 'acos(',  label: 'cos⁻¹', hint: '逆cos',  type: 'func', cls:'special-btn' },
+  { sym: 'atan(',  label: 'tan⁻¹', hint: '逆tan',  type: 'func', cls:'special-btn' },
+  { sym: 'P(',     label: 'P(n,r)', hint: '順列',   type: 'func2', cls:'special-btn' },
+  { sym: 'C(',     label: 'C(n,r)', hint: '組合せ',  type: 'func2', cls:'special-btn' },
+  { sym: 'floor(', label: '⌊x⌋',  hint: '床関数',  type: 'func', cls:'special-btn' },
+  { sym: 'ceil(',  label: '⌈x⌉',  hint: '天井関数', type: 'func', cls:'special-btn' },
+  { sym: '(',      label: '(',      hint: '',       type: 'paren', cls:'paren-btn' },
+  { sym: ')',      label: ')',      hint: '',       type: 'paren', cls:'paren-btn' },
+  { sym: ',',      label: ',',      hint: '引数区切', type: 'paren', cls:'paren-btn' },
+];
+
+const REF = [
+  { sym: 'a + b',    desc: '加算' },
+  { sym: 'a - b',    desc: '減算' },
+  { sym: 'a × b',    desc: '乗算' },
+  { sym: 'a ÷ b',    desc: '除算' },
+  { sym: 'a ^ b',    desc: 'べき乗 (a^b)' },
+  { sym: 'a mod b',  desc: '剰余' },
+  { sym: 'n!',       desc: '階乗 (4! = 24)' },
+  { sym: '√a',       desc: '平方根' },
+  { sym: '∛a',       desc: '立方根' },
+  { sym: 'log(a)',   desc: '常用対数' },
+  { sym: 'ln(a)',    desc: '自然対数' },
+  { sym: '|a|',      desc: '絶対値' },
+  { sym: '⌊a⌋',      desc: '床関数（その他タブ）' },
+  { sym: '⌈a⌉',      desc: '天井関数（その他タブ）' },
+  { sym: '[a]',       desc: 'ガウス記号＝床関数' },
+  { sym: 'sin/cos/tan', desc: 'ラジアン単位' },
+  { sym: 'arcsin(a)', desc: '逆sin → ラジアン' },
+  { sym: 'arccos(a)', desc: '逆cos → ラジアン' },
+  { sym: 'arctan(a)', desc: '逆tan → ラジアン' },
+  { sym: 'P(n,r)',   desc: '順列 n!/(n-r)!' },
+  { sym: 'C(n,r)',   desc: '組合せ n!/r!(n-r)!' },
+];
+
+// ========== STATE ==========
+let state = {
+  numbers: [],
+  usedIndices: new Set(),
+  tokens: [],      // { type:'num'|'op'|'paren'|'func', value, display, numIdx? }
+  score: 0,
+  streak: 0,
+  solved: 0,
+  diff: 'easy',
+  target: 10,
+  history: [],
+};
+
+// ========== INIT ==========
+function init() {
+  buildBgSymbols();
+  buildOpsGrid();
+  buildRefGrid();
+  newPuzzle();
+}
+
+function buildBgSymbols() {
+  const syms = ['+', '−', '×', '÷', '√', '^', '∫', 'π', 'n!', 'log', '∛', '∞'];
+  const container = document.getElementById('bgSymbols');
+  syms.forEach((s, i) => {
+    const el = document.createElement('div');
+    el.className = 'bg-sym';
+    el.textContent = s;
+    el.style.left = (5 + i * 8.5) + '%';
+    el.style.animationDelay = (i * 2.5) + 's';
+    el.style.animationDuration = (18 + i * 3) + 's';
+    el.style.fontSize = (3 + (i % 3) * 2) + 'rem';
+    container.appendChild(el);
+  });
+}
+
+function buildOpsGrid() {
+  const grid = document.getElementById('opsGrid');
+  grid.innerHTML = '';
+  OPERATORS.forEach(op => {
+    const btn = document.createElement('button');
+    btn.className = 'op-btn ' + (op.cls || '');
+    btn.innerHTML = `${op.label}${op.hint ? `<span class="op-hint">${op.hint}</span>` : ''}`;
+    btn.onclick = () => insertOp(op);
+    grid.appendChild(btn);
+  });
+
+  const gridExtra = document.getElementById('opsGridExtra');
+  gridExtra.innerHTML = '';
+  EXTRA_OPERATORS.forEach(op => {
+    const btn = document.createElement('button');
+    btn.className = 'op-btn ' + (op.cls || '');
+    btn.innerHTML = `${op.label}${op.hint ? `<span class="op-hint">${op.hint}</span>` : ''}`;
+    btn.onclick = () => insertOp(op);
+    gridExtra.appendChild(btn);
+  });
+}
+
+function switchOpsTab(name, el) {
+  document.querySelectorAll('.ops-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.ops-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('opsPanel-' + name).classList.add('active');
+}
+
+function buildRefGrid() {
+  const grid = document.getElementById('refGrid');
+  grid.innerHTML = '';
+  REF.forEach(r => {
+    const item = document.createElement('div');
+    item.className = 'ref-item';
+    item.innerHTML = `<span class="ref-sym">${r.sym}</span><span>${r.desc}</span>`;
+    grid.appendChild(item);
+  });
+}
+
+function setDiff(d) {
+  state.diff = d;
+  document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  newPuzzle();
+}
+
+function newPuzzle() {
+  const cfg = DIFFICULTIES[state.diff];
+  state.numbers = Array.from({length: cfg.count}, () =>
+    Math.floor(Math.random() * (cfg.range[1] - cfg.range[0] + 1)) + cfg.range[0]
+  );
+  state.usedIndices = new Set();
+  state.tokens = [];
+  state.target = cfg.target;
+  document.getElementById('targetDisplay').textContent = state.target;
+  renderNumbers();
+  renderExpr();
+  updateResult();
+}
+
+// ========== RENDER ==========
+function renderNumbers() {
+  const grid = document.getElementById('numbersGrid');
+  grid.innerHTML = '';
+  state.numbers.forEach((n, i) => {
+    const card = document.createElement('div');
+    card.className = 'num-card' + (state.usedIndices.has(i) ? ' used' : '');
+    card.textContent = n;
+    card.onclick = () => insertNumber(n, i);
+    grid.appendChild(card);
+  });
+}
+
+function renderExpr() {
+  const display = document.getElementById('exprDisplay');
+  if (state.tokens.length === 0) {
+    display.innerHTML = '<span class="cursor-blink"></span>';
+    return;
+  }
+
+  // Track open abs( to know if a ) should display as |
+  let html = '';
+  const absStack = []; // indices of open abs(
+  state.tokens.forEach((t, i) => {
+    let cls = 'expr-token ';
+    let label = t.display;
+
+    if (t.type === 'num') {
+      cls += 'num-token';
+    } else if (t.type === 'paren' || t.type === 'func') {
+      cls += 'paren-token';
+    } else {
+      cls += 'op-token';
+    }
+
+    html += `<span class="${cls}" onclick="removeToken(${i})" title="クリックで削除">${label}</span>`;
+  });
+
+  html += '<span class="cursor-blink"></span>';
+  display.innerHTML = html;
+}
+
+function removeToken(idx) {
+  const t = state.tokens[idx];
+  if (t.numIdx !== undefined) state.usedIndices.delete(t.numIdx);
+  state.tokens.splice(idx, 1);
+  renderNumbers();
+  renderExpr();
+  updateResult();
+}
+
+// ========== INSERT ==========
+function insertNumber(n, idx) {
+  if (state.usedIndices.has(idx)) return;
+  state.usedIndices.add(idx);
+  state.tokens.push({ type: 'num', value: String(n), display: String(n), numIdx: idx });
+  renderNumbers();
+  renderExpr();
+  updateResult();
+}
+
+function insertOp(op) {
+  if (op.sym === '!') {
+    state.tokens.push({ type: 'op', value: '!', display: '!' });
+  } else if (op.type === 'func2') {
+    // P( → display "P(" , C( → "C("
+    const label = op.sym === 'P(' ? 'P' : 'C';
+    state.tokens.push({ type: 'func', value: op.sym, display: label + '(' });
+  } else if (op.type === 'abs') {
+    state.tokens.push({ type: 'func', value: 'abs(', display: '|x|(' });
+  } else if (op.type === 'func') {
+    state.tokens.push({ type: 'func', value: op.sym, display: op.label + '(' });
+  } else if (op.type === 'paren') {
+    // closing ) after abs( should show as |
+    state.tokens.push({ type: 'paren', value: op.sym, display: op.label });
+  } else {
+    state.tokens.push({ type: 'op', value: op.sym, display: op.label });
+  }
+  renderExpr();
+  updateResult();
+}
+
+function deleteLast() {
+  if (state.tokens.length === 0) return;
+  const last = state.tokens.pop();
+  if (last.numIdx !== undefined) {
+    state.usedIndices.delete(last.numIdx);
+    renderNumbers();
+  }
+  renderExpr();
+  updateResult();
+}
+
+function clearAll() {
+  state.tokens = [];
+  state.usedIndices = new Set();
+  renderNumbers();
+  renderExpr();
+  updateResult();
+}
+
+
+// ========== EVALUATE ==========
+function buildExprString() {
+  return state.tokens.map(t => t.value).join(' ');
+}
+
+function safeEval(expr) {
+  try {
+    // Replace math functions/operators
+    let e = expr
+      .replace(/\^/g, '**')
+      .replace(/sqrt\s*\(/g, 'Math.sqrt(')
+      .replace(/cbrt\s*\(/g, 'Math.cbrt(')
+      .replace(/log\s*\(/g, 'Math.log10(')
+      .replace(/ln\s*\(/g, 'Math.log(')
+      .replace(/asin\s*\(/g, 'Math.asin(')
+      .replace(/acos\s*\(/g, 'Math.acos(')
+      .replace(/atan2\s*\(/g, 'Math.atan2(')
+      .replace(/atan\s*\(/g, 'Math.atan(')
+      .replace(/sin\s*\(/g, 'Math.sin(')
+      .replace(/cos\s*\(/g, 'Math.cos(')
+      .replace(/tan\s*\(/g, 'Math.tan(')
+      .replace(/abs\s*\(/g, 'Math.abs(')
+      .replace(/floor\s*\(/g, 'Math.floor(')
+      .replace(/ceil\s*\(/g, 'Math.ceil(')
+      .replace(/gauss\s*\(/g, 'Math.floor(')
+      .replace(/P\s*\(/g, 'perm(')
+      .replace(/C\s*\(/g, 'comb(');
+
+    // Handle factorial: n! → factorial(n)
+    e = e.replace(/(\d+(?:\.\d+)?)\s*!/g, (m, n) => `factorial(${n})`);
+
+    const factorial = n => {
+      n = Math.round(n);
+      if (n < 0 || n > 20) return NaN;
+      if (n <= 1) return 1;
+      let r = 1;
+      for (let i = 2; i <= n; i++) r *= i;
+      return r;
+    };
+
+    const perm = (n, r) => {
+      n = Math.round(n); r = Math.round(r);
+      if (r < 0 || r > n || n > 20) return NaN;
+      return factorial(n) / factorial(n - r);
+    };
+
+    const comb = (n, r) => {
+      n = Math.round(n); r = Math.round(r);
+      if (r < 0 || r > n || n > 20) return NaN;
+      return factorial(n) / (factorial(r) * factorial(n - r));
+    };
+
+    // eslint-disable-next-line no-new-func
+    const result = new Function('factorial', 'perm', 'comb', `"use strict"; return (${e});`)(factorial, perm, comb);
+
+    if (typeof result !== 'number' || !isFinite(result)) return null;
+    return result;
+  } catch {
+    return null;
+  }
+}
+
+function updateResult() {
+  const expr = buildExprString();
+  const val = safeEval(expr);
+  const display = document.getElementById('resultVal');
+
+  if (val === null || expr.trim() === '') {
+    display.textContent = '—';
+    display.className = 'result-val';
+  } else {
+    const rounded = Math.round(val * 10000) / 10000;
+    display.textContent = rounded;
+    if (Math.abs(val - state.target) < 0.0001) {
+      display.className = 'result-val correct';
+    } else {
+      display.className = 'result-val wrong';
+    }
+  }
+}
+
+// ========== CHECK ==========
+function checkAnswer() {
+  const expr = buildExprString();
+  if (!expr.trim()) return;
+
+  // Must use all numbers
+  if (state.usedIndices.size !== state.numbers.length) {
+    flashError('全ての数字を使ってください！');
+    return;
+  }
+
+  const val = safeEval(expr);
+  if (val === null) {
+    flashError('式が正しくありません');
+    return;
+  }
+
+  if (Math.abs(val - state.target) < 0.0001) {
+    // Success!
+    const bonus = calcBonus();
+    state.score += 100 + bonus;
+    state.streak++;
+    state.solved++;
+    updateStats();
+
+    const exprStr = state.tokens.map(t => t.display).join(' ');
+    document.getElementById('successExpr').textContent = exprStr + ' = ' + state.target;
+    document.getElementById('successScore').textContent = `+${100 + bonus}pts (streak: ${state.streak})`;
+
+    state.history.unshift({
+      nums: [...state.numbers].join(', '),
+      expr: exprStr,
+      score: 100 + bonus,
+    });
+    renderHistory();
+
+    spawnConfetti();
+    document.getElementById('successOverlay').classList.add('show');
+  } else {
+    state.streak = 0;
+    updateStats();
+    flashError(`= ${Math.round(val * 10000) / 10000}  ≠ ${state.target}`);
+  }
+}
+
+function calcBonus() {
+  // Bonus for using complex operators
+  const complex = state.tokens.filter(t =>
+    t.type === 'func' || ['!', '^', '%'].includes(t.value)
+  ).length;
+  const streakBonus = Math.min(state.streak * 20, 200);
+  return complex * 15 + streakBonus;
+}
+
+function flashError(msg) {
+  const display = document.getElementById('resultVal');
+  const orig = display.textContent;
+  const origCls = display.className;
+  display.textContent = msg;
+  display.className = 'result-val wrong';
+  setTimeout(() => {
+    display.textContent = orig;
+    display.className = origCls;
+  }, 1500);
+}
+
+function nextPuzzle() {
+  document.getElementById('successOverlay').classList.remove('show');
+  newPuzzle();
+}
+
+function updateStats() {
+  document.getElementById('scoreVal').textContent = state.score;
+  document.getElementById('streakVal').textContent = state.streak;
+  document.getElementById('solvedVal').textContent = state.solved;
+}
+
+function renderHistory() {
+  const section = document.getElementById('historySection');
+  const list = document.getElementById('historyList');
+  section.style.display = 'block';
+  list.innerHTML = state.history.slice(0, 10).map(h => `
+    <div class="history-item">
+      <span class="history-nums">[${h.nums}]</span>
+      <span class="history-expr">${h.expr}</span>
+      <span class="history-score">+${h.score}</span>
+    </div>
+  `).join('');
+}
+
+// ========== CONFETTI ==========
+function spawnConfetti() {
+  const colors = ['#e8ff47', '#47ff8a', '#00d2ff', '#ff4757', '#ff9f43'];
+  for (let i = 0; i < 60; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.className = 'confetti-piece';
+      el.style.left = Math.random() * 100 + 'vw';
+      el.style.background = colors[Math.floor(Math.random() * colors.length)];
+      el.style.animationDuration = (1.5 + Math.random() * 2) + 's';
+      el.style.animationDelay = Math.random() * 0.5 + 's';
+      el.style.width = (6 + Math.random() * 8) + 'px';
+      el.style.height = (6 + Math.random() * 8) + 'px';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 4000);
+    }, i * 20);
+  }
+}
+
+// ========== KEYBOARD ==========
+document.addEventListener('keydown', e => {
+  if (e.key === 'Backspace') deleteLast();
+  if (e.key === 'Enter') checkAnswer();
+  if (e.key === 'Escape') clearAll();
+  if (e.key === 'n' || e.key === 'N') newPuzzle();
+
+  // Number keys
+  const digit = parseInt(e.key);
+  if (!isNaN(digit) && digit >= 0 && digit <= 9) {
+    // find unused number matching digit
+    const idx = state.numbers.findIndex((n, i) => n === digit && !state.usedIndices.has(i));
+    if (idx !== -1) insertNumber(state.numbers[idx], idx);
+  }
+
+  // Operator shortcuts
+  const opMap = { '+': '+', '-': '-', '*': '*', '/': '/', '^': '^', '%': '%' };
+  if (opMap[e.key] && !e.ctrlKey) {
+    const op = OPERATORS.find(o => o.sym === opMap[e.key]);
+    if (op) insertOp(op);
+  }
+});
+
+init();
+</script>
+</body>
+</html>
