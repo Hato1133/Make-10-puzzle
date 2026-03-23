@@ -264,6 +264,23 @@
     opacity: 0.6;
   }
 
+  .cursor-btn {
+    padding: 0.3rem 0.9rem;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+
+  .cursor-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
   .cursor-blink {
     display: inline-block;
     width: 3px;
@@ -705,6 +722,13 @@
       <span class="cursor-blink"></span>
     </div>
   </div>
+  <!-- Cursor controls -->
+  <div style="display:flex; gap:0.5rem; justify-content:center; margin-bottom:0.75rem;">
+    <button class="cursor-btn" onclick="moveCursorTo(0)" title="先頭へ">|◀</button>
+    <button class="cursor-btn" onclick="moveCursorTo(state.cursor - 1)" title="左へ">◀</button>
+    <button class="cursor-btn" onclick="moveCursorTo(state.cursor + 1)" title="右へ">▶</button>
+    <button class="cursor-btn" onclick="moveCursorTo(state.tokens.length)" title="末尾へ">▶|</button>
+  </div>
 
   <!-- Result -->
   <div class="result-display">
@@ -851,6 +875,7 @@ let state = {
   numbers: [],
   usedIndices: new Set(),
   tokens: [],      // { type:'num'|'op'|'paren'|'func', value, display, numIdx? }
+  cursor: 0,       // insertion point: 0 = before all tokens, tokens.length = after all
   score: 0,
   streak: 0,
   solved: 0,
@@ -936,6 +961,7 @@ function newPuzzle() {
   );
   state.usedIndices = new Set();
   state.tokens = [];
+  state.cursor = 0;
   state.target = cfg.target;
   document.getElementById('targetDisplay').textContent = state.target;
   renderNumbers();
@@ -963,32 +989,37 @@ function renderExpr() {
     return;
   }
 
-  // Track open abs( to know if a ) should display as |
+  const cursor = '<span class="cursor-blink"></span>';
   let html = '';
-  const absStack = []; // indices of open abs(
+
+  if (state.cursor === 0) html += cursor;
+
   state.tokens.forEach((t, i) => {
     let cls = 'expr-token ';
-    let label = t.display;
+    if (t.type === 'num') cls += 'num-token';
+    else if (t.type === 'paren' || t.type === 'func') cls += 'paren-token';
+    else cls += 'op-token';
 
-    if (t.type === 'num') {
-      cls += 'num-token';
-    } else if (t.type === 'paren' || t.type === 'func') {
-      cls += 'paren-token';
-    } else {
-      cls += 'op-token';
-    }
+    html += `<span class="${cls}" onclick="moveCursorTo(${i + 1})" ondblclick="removeToken(${i})" title="クリック:カーソル移動 / ダブルクリック:削除">${t.display}</span>`;
 
-    html += `<span class="${cls}" onclick="removeToken(${i})" title="クリックで削除">${label}</span>`;
+    if (state.cursor === i + 1) html += cursor;
   });
 
-  html += '<span class="cursor-blink"></span>';
   display.innerHTML = html;
+}
+
+function moveCursorTo(pos) {
+  state.cursor = Math.max(0, Math.min(pos, state.tokens.length));
+  renderExpr();
 }
 
 function removeToken(idx) {
   const t = state.tokens[idx];
   if (t.numIdx !== undefined) state.usedIndices.delete(t.numIdx);
   state.tokens.splice(idx, 1);
+  // adjust cursor if needed
+  if (state.cursor > idx) state.cursor--;
+  state.cursor = Math.max(0, Math.min(state.cursor, state.tokens.length));
   renderNumbers();
   renderExpr();
   updateResult();
@@ -998,46 +1029,52 @@ function removeToken(idx) {
 function insertNumber(n, idx) {
   if (state.usedIndices.has(idx)) return;
   state.usedIndices.add(idx);
-  state.tokens.push({ type: 'num', value: String(n), display: String(n), numIdx: idx });
+  const tok = { type: 'num', value: String(n), display: String(n), numIdx: idx };
+  state.tokens.splice(state.cursor, 0, tok);
+  state.cursor++;
   renderNumbers();
   renderExpr();
   updateResult();
 }
 
 function insertOp(op) {
+  let tok;
   if (op.sym === '!') {
-    state.tokens.push({ type: 'op', value: '!', display: '!' });
+    tok = { type: 'op', value: '!', display: '!' };
   } else if (op.type === 'func2') {
-    // P( → display "P(" , C( → "C("
     const label = op.sym === 'P(' ? 'P' : 'C';
-    state.tokens.push({ type: 'func', value: op.sym, display: label + '(' });
+    tok = { type: 'func', value: op.sym, display: label + '(' };
   } else if (op.type === 'abs') {
-    state.tokens.push({ type: 'func', value: 'abs(', display: '|x|(' });
+    tok = { type: 'func', value: 'abs(', display: '|x|(' };
   } else if (op.type === 'func') {
-    state.tokens.push({ type: 'func', value: op.sym, display: op.label + '(' });
+    tok = { type: 'func', value: op.sym, display: op.label + '(' };
   } else if (op.type === 'paren') {
-    // closing ) after abs( should show as |
-    state.tokens.push({ type: 'paren', value: op.sym, display: op.label });
+    tok = { type: 'paren', value: op.sym, display: op.label };
   } else {
-    state.tokens.push({ type: 'op', value: op.sym, display: op.label });
+    tok = { type: 'op', value: op.sym, display: op.label };
   }
+  state.tokens.splice(state.cursor, 0, tok);
+  state.cursor++;
   renderExpr();
   updateResult();
 }
 
 function deleteLast() {
-  if (state.tokens.length === 0) return;
-  const last = state.tokens.pop();
-  if (last.numIdx !== undefined) {
-    state.usedIndices.delete(last.numIdx);
+  if (state.cursor === 0) return;
+  const t = state.tokens[state.cursor - 1];
+  if (t.numIdx !== undefined) {
+    state.usedIndices.delete(t.numIdx);
     renderNumbers();
   }
+  state.tokens.splice(state.cursor - 1, 1);
+  state.cursor--;
   renderExpr();
   updateResult();
 }
 
 function clearAll() {
   state.tokens = [];
+  state.cursor = 0;
   state.usedIndices = new Set();
   renderNumbers();
   renderExpr();
@@ -1063,9 +1100,9 @@ function safeEval(expr) {
       .replace(/acos\s*\(/g, 'Math.acos(')
       .replace(/atan2\s*\(/g, 'Math.atan2(')
       .replace(/atan\s*\(/g, 'Math.atan(')
-      .replace(/sin\s*\(/g, 'Math.sin(')
-      .replace(/cos\s*\(/g, 'Math.cos(')
-      .replace(/tan\s*\(/g, 'Math.tan(')
+      .replace(/(?<!a)sin\s*\(/g, 'Math.sin(')
+      .replace(/(?<!a)cos\s*\(/g, 'Math.cos(')
+      .replace(/(?<!a)tan\s*\(/g, 'Math.tan(')
       .replace(/abs\s*\(/g, 'Math.abs(')
       .replace(/floor\s*\(/g, 'Math.floor(')
       .replace(/ceil\s*\(/g, 'Math.ceil(')
@@ -1237,6 +1274,18 @@ function spawnConfetti() {
 
 // ========== KEYBOARD ==========
 document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowLeft') {
+    state.cursor = Math.max(0, state.cursor - 1);
+    renderExpr();
+    return;
+  }
+  if (e.key === 'ArrowRight') {
+    state.cursor = Math.min(state.tokens.length, state.cursor + 1);
+    renderExpr();
+    return;
+  }
+  if (e.key === 'Home') { state.cursor = 0; renderExpr(); return; }
+  if (e.key === 'End') { state.cursor = state.tokens.length; renderExpr(); return; }
   if (e.key === 'Backspace') deleteLast();
   if (e.key === 'Enter') checkAnswer();
   if (e.key === 'Escape') clearAll();
@@ -1245,7 +1294,6 @@ document.addEventListener('keydown', e => {
   // Number keys
   const digit = parseInt(e.key);
   if (!isNaN(digit) && digit >= 0 && digit <= 9) {
-    // find unused number matching digit
     const idx = state.numbers.findIndex((n, i) => n === digit && !state.usedIndices.has(i));
     if (idx !== -1) insertNumber(state.numbers[idx], idx);
   }
