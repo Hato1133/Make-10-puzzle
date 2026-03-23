@@ -825,9 +825,9 @@ const OPERATORS = [
   { sym: 'cbrt(',  label: '∛',    hint: '立方根',  type: 'func', cls:'special-btn' },
   { sym: 'log(',   label: 'log',  hint: '常用対数', type: 'func', cls:'special-btn' },
   { sym: 'ln(',    label: 'ln',   hint: '自然対数', type: 'func', cls:'special-btn' },
-  { sym: 'sin(',   label: 'sin',  hint: '正弦(Rad)', type: 'func', cls:'special-btn' },
-  { sym: 'cos(',   label: 'cos',  hint: '余弦(Rad)', type: 'func', cls:'special-btn' },
-  { sym: 'tan(',   label: 'tan',  hint: '正接(Rad)', type: 'func', cls:'special-btn' },
+  { sym: 'sin(',   label: 'sin',  hint: '正弦(Deg)', type: 'func', cls:'special-btn' },
+  { sym: 'cos(',   label: 'cos',  hint: '余弦(Deg)', type: 'func', cls:'special-btn' },
+  { sym: 'tan(',   label: 'tan',  hint: '正接(Deg)', type: 'func', cls:'special-btn' },
   { sym: 'abs(',   label: '|x|',  hint: '絶対値',  type: 'func', cls:'special-btn' },
   { sym: '%',      label: 'mod',   hint: '剰余',   type: 'basic' },
   { sym: '!',      label: 'n!',    hint: '階乗',   type: 'postfix', cls:'special-btn' },
@@ -1102,7 +1102,38 @@ function safeEval(expr) {
       .replace(/atan\s*\(/g, 'Math.atan(')
       .replace(/(?<!a)sin\s*\(/g, 'Math.sin(')
       .replace(/(?<!a)cos\s*\(/g, 'Math.cos(')
-      .replace(/(?<!a)tan\s*\(/g, 'Math.tan(')
+      .replace(/(?<!a)tan\s*\(/g, 'Math.tan(');
+
+    // Degree mode: wrap trig function arguments with deg2rad
+    // Replace Math.sin(expr) → Math.sin(expr * Math.PI/180)
+    // We do this by post-processing: find each trig call and wrap its content
+    const wrapDeg = (str, fn) => {
+      const pattern = new RegExp(`${fn}\\(`, 'g');
+      let result = '';
+      let last = 0;
+      let m;
+      while ((m = pattern.exec(str)) !== null) {
+        result += str.slice(last, m.index + fn.length + 1);
+        // find matching closing paren
+        let depth = 1, k = m.index + fn.length + 1;
+        while (k < str.length && depth > 0) {
+          if (str[k] === '(') depth++;
+          else if (str[k] === ')') depth--;
+          k++;
+        }
+        // k is now after the closing paren
+        const inner = str.slice(m.index + fn.length + 1, k - 1);
+        result += `(${inner})*Math.PI/180)`;
+        last = k;
+        pattern.lastIndex = k;
+      }
+      result += str.slice(last);
+      return result;
+    };
+    e = wrapDeg(e, 'Math.sin');
+    e = wrapDeg(e, 'Math.cos');
+    e = wrapDeg(e, 'Math.tan');
+    e = e
       .replace(/abs\s*\(/g, 'Math.abs(')
       .replace(/floor\s*\(/g, 'Math.floor(')
       .replace(/ceil\s*\(/g, 'Math.ceil(')
