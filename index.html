@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MAKE 10 — 数学記号なんでもあり</title>
+<title>MAKE 10 — 数学記号なんでもありパズル</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+JP:wght@300;400;700;900&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -821,26 +821,26 @@ const OPERATORS = [
   { sym: '^',   label: '^',    hint: 'べき乗',  type: 'basic' },
   { sym: '(',   label: '(',    hint: '',       type: 'paren', cls:'paren-btn' },
   { sym: ')',   label: ')',    hint: '',       type: 'paren', cls:'paren-btn' },
-  { sym: 'sqrt(',  label: '√',    hint: '平方根',  type: 'func', cls:'special-btn' },
-  { sym: 'cbrt(',  label: '∛',    hint: '立方根',  type: 'func', cls:'special-btn' },
+  { sym: 'sqrt(',  label: '√n',    hint: '平方根',  type: 'func', cls:'special-btn' },
+  { sym: 'cbrt(',  label: '∛n',    hint: '立方根',  type: 'func', cls:'special-btn' },
   { sym: 'log(',   label: 'log',  hint: '常用対数', type: 'func', cls:'special-btn' },
   { sym: 'ln(',    label: 'ln',   hint: '自然対数', type: 'func', cls:'special-btn' },
   { sym: 'sin(',   label: 'sin',  hint: '正弦(Deg)', type: 'func', cls:'special-btn' },
   { sym: 'cos(',   label: 'cos',  hint: '余弦(Deg)', type: 'func', cls:'special-btn' },
   { sym: 'tan(',   label: 'tan',  hint: '正接(Deg)', type: 'func', cls:'special-btn' },
-  { sym: 'abs(',   label: '|x|',  hint: '絶対値',  type: 'func', cls:'special-btn' },
+  { sym: 'abs(',   label: '|n|',  hint: '絶対値',  type: 'func', cls:'special-btn' },
   { sym: '%',      label: 'mod',   hint: '剰余',   type: 'basic' },
   { sym: '!',      label: 'n!',    hint: '階乗',   type: 'postfix', cls:'special-btn' },
 ];
 
 const EXTRA_OPERATORS = [
-  { sym: 'asin(',  label: 'sin⁻¹', hint: '逆sin',  type: 'func', cls:'special-btn' },
-  { sym: 'acos(',  label: 'cos⁻¹', hint: '逆cos',  type: 'func', cls:'special-btn' },
-  { sym: 'atan(',  label: 'tan⁻¹', hint: '逆tan',  type: 'func', cls:'special-btn' },
+  { sym: 'asin(',  label: 'sin⁻¹', hint: '逆sin(Deg)',  type: 'func', cls:'special-btn' },
+  { sym: 'acos(',  label: 'cos⁻¹', hint: '逆cos(Deg)',  type: 'func', cls:'special-btn' },
+  { sym: 'atan(',  label: 'tan⁻¹', hint: '逆tan(Deg)',  type: 'func', cls:'special-btn' },
   { sym: 'P(',     label: 'P(n,r)', hint: '順列',   type: 'func2', cls:'special-btn' },
   { sym: 'C(',     label: 'C(n,r)', hint: '組合せ',  type: 'func2', cls:'special-btn' },
-  { sym: 'floor(', label: '⌊x⌋',  hint: '床関数',  type: 'func', cls:'special-btn' },
-  { sym: 'ceil(',  label: '⌈x⌉',  hint: '天井関数', type: 'func', cls:'special-btn' },
+  { sym: 'floor(', label: '⌊n⌋',  hint: '床関数',  type: 'func', cls:'special-btn' },
+  { sym: 'ceil(',  label: '⌈n⌉',  hint: '天井関数', type: 'func', cls:'special-btn' },
   { sym: '(',      label: '(',      hint: '',       type: 'paren', cls:'paren-btn' },
   { sym: ')',      label: ')',      hint: '',       type: 'paren', cls:'paren-btn' },
   { sym: ',',      label: ',',      hint: '引数区切', type: 'paren', cls:'paren-btn' },
@@ -851,7 +851,7 @@ const REF = [
   { sym: 'a - b',    desc: '減算' },
   { sym: 'a × b',    desc: '乗算' },
   { sym: 'a ÷ b',    desc: '除算' },
-  { sym: 'a ^ b',    desc: 'べき乗 (a^b)' },
+  { sym: 'a ^ b',    desc: 'べき乗' },
   { sym: 'a mod b',  desc: '剰余' },
   { sym: 'n!',       desc: '階乗 (4! = 24)' },
   { sym: '√a',       desc: '平方根' },
@@ -859,15 +859,12 @@ const REF = [
   { sym: 'log(a)',   desc: '常用対数' },
   { sym: 'ln(a)',    desc: '自然対数' },
   { sym: '|a|',      desc: '絶対値' },
-  { sym: '⌊a⌋',      desc: '床関数（その他タブ）' },
-  { sym: '⌈a⌉',      desc: '天井関数（その他タブ）' },
-  { sym: '[a]',       desc: 'ガウス記号＝床関数' },
-  { sym: 'sin/cos/tan', desc: 'ラジアン単位' },
-  { sym: 'arcsin(a)', desc: '逆sin → ラジアン' },
-  { sym: 'arccos(a)', desc: '逆cos → ラジアン' },
-  { sym: 'arctan(a)', desc: '逆tan → ラジアン' },
-  { sym: 'P(n,r)',   desc: '順列 n!/(n-r)!' },
-  { sym: 'C(n,r)',   desc: '組合せ n!/r!(n-r)!' },
+  { sym: '⌊a⌋',      desc: '床' },
+  { sym: '⌈a⌉',      desc: '天井' },
+  { sym: 'sin(a)/cos(a)/tan(a)', desc: '三角関数' },
+  { sym: 'sin⁻¹(a)/cos⁻¹(a)/tan⁻¹(a)', desc: '逆三角関数' },
+  { sym: 'P(n,r)',   desc: '順列' },
+  { sym: 'C(n,r)',   desc: '組合せ' },
 ];
 
 // ========== STATE ==========
