@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>極限ガチャ - LIMIT GACHA -</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --bg: #f4f7f6;
+            --card-bg: #ffffff;
+            --text: #333333;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: var(--card-bg);
+            max-width: 600px;
+            width: 100%;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: var(--primary);
+            font-size: 2.5em;
+            margin-bottom: 5px;
+            letter-spacing: 2px;
+        }
+        p.subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+        
+        .screen { display: none; }
+        .screen.active { display: block; }
+        
+        /* Start Screen */
+        .setting-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .setting-group h3 { margin-top: 0; margin-bottom: 10px; font-size: 1.1em; border-bottom: 1px solid #eee; padding-bottom: 5px;}
+        select, button {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.1em;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+        button:hover { background-color: #357abd; }
+        .checkbox-label {
+            display: block;
+            margin: 10px 0;
+            cursor: pointer;
+        }
+
+        /* Game Screen */
+        #timer {
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            color: #d0021b;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 20px;
+        }
+        .question-card {
+            background: #f9f9f9;
+            border-left: 5px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        .math-display { font-size: 1.5em; margin-bottom: 15px; text-align: center; overflow-x: auto;}
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            font-size: 1.1em;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        .note { font-size: 0.85em; color: #666; text-align: center; margin-bottom: 20px;}
+
+        /* Result Screen */
+        .result-header { text-align: center; margin-bottom: 20px; }
+        .result-time { font-size: 2em; font-weight: bold; color: var(--primary); }
+        .result-score { font-size: 1.5em; margin-bottom: 20px; }
+        .result-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 10px;
+        }
+        .correct-mark { color: #4caf50; font-weight: bold; }
+        .wrong-mark { color: #f44336; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="start-screen" class="screen active">
+        <h1>極限ガチャ</h1>
+        <p class="subtitle">- LIMIT GACHA -</p>
+        
+        <div class="setting-group">
+            <h3>難易度設定</h3>
+            <select id="difficulty">
+                <option value="easy">イージー (基礎計算)</option>
+                <option value="normal" selected>ノーマル (標準的な極限)</option>
+                <option value="hard">ハード (応用・微積分の極限)</option>
+            </select>
+        </div>
+
+        <div class="setting-group">
+            <h3>アドバンスド設定 (出現要素)</h3>
+            <label class="checkbox-label">
+                <input type="checkbox" id="allow-frac" checked> 分数形式の出題を含む
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" id="allow-trig" checked> 三角関数(sin, cos, tan)の出題を含む
+            </label>
+        </div>
+
+        <button onclick="startGame()">ガチャを回す (START)</button>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="timer">00:00.00</div>
+        <p class="note">※分数は「1/2」、負の数は「-3」のように既約分数で入力してください。</p>
+        <div id="questions-container"></div>
+        <button onclick="submitAnswers()" style="margin-top: 20px;">解答を提出する</button>
+    </div>
+
+    <div id="result-screen" class="screen">
+        <div class="result-header">
+            <h2>リザルト</h2>
+            <div class="result-time" id="result-time-display"></div>
+            <div class="result-score" id="result-score-display"></div>
+        </div>
+        <div id="result-details"></div>
+        <button onclick="resetGame()" style="margin-top: 30px;">タイトルに戻る</button>
+    </div>
+</div>
+
+<script>
+    // ユーティリティ関数
+    const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const nonZeroRand = (min, max) => { let r = 0; while(r===0) r = rand(min,max); return r; };
+    const gcd = (a, b) => b ? gcd(b, a % b) : Math.abs(a);
+    const simplifyFrac = (num, den) => {
+        if (num === 0) return "0";
+        let g = gcd(num, den);
+        num /= g; den /= g;
+        if (den < 0) { num = -num; den = -den; }
+        if (den === 1) return `${num}`;
+        return `${num}/${den}`;
+    };
+
+    // 極限問題生成ロジック (ガチャの中身)
+    const generators = [
+        // Easy: 単純な多項式 (Frac: false, Trig: false)
+        { diff: 'easy', frac: false, trig: false, gen: () => {
+            let a = rand(-4, 4), c = nonZeroRand(-3, 3), d = rand(-5, 5);
+            return { q: `\\lim_{x \\to ${a}} (${c}x ${d>=0?'+':''}${d})`, a: `${c*a + d}` };
+        }},
+        // Easy: 基礎的な分数1 (Frac: true, Trig: false)
+        { diff: 'easy', frac: true, trig: false, gen: () => {
+            let a = nonZeroRand(-5, 5);
+            return { q: `\\lim_{x \\to ${a}} \\frac{x^2 - ${a*a}}{x - ${a < 0 ? `(${a})` : a}}`, a: `${2*a}` };
+        }},
+        // Easy: 基礎的な分数2 (Frac: true, Trig: false)
+        { diff: 'easy', frac: true, trig: false, gen: () => {
+            let a = nonZeroRand(-5, 5);
+            return { q: `\\lim_{x \\to 0} \\frac{x^2 ${a>0?'+':''}${a}x}{x}`, a: `${a}` };
+        }},
+        // Normal: 無限大の分数 (Frac: true, Trig: false)
+        { diff: 'normal', frac: true, trig: false, gen: () => {
+            let a = nonZeroRand(-5, 5), c = nonZeroRand(1, 5), b = rand(-5, 5), d = rand(-5, 5);
+            return { q: `\\lim_{x \\to \\infty} \\frac{${a}x^2 ${b>=0?'+':''}${b}x}{${c}x^2 ${d>=0?'+':''}${d}}`, a: simplifyFrac(a, c) };
+        }},
+        // Normal: ルートの極限 (Frac: false, Trig: false)
+        { diff: 'normal', frac: false, trig: false, gen: () => {
+            let a = nonZeroRand(-5, 5);
+            return { q: `\\lim_{x \\to \\infty} (\\sqrt{x^2 ${2*a>0?'+':''}${2*a}x} - x)`, a: `${a}` };
+        }},
+        // Normal: サインの極限 (Frac: true, Trig: true)
+        { diff: 'normal', frac: true, trig: true, gen: () => {
+            let a = nonZeroRand(-5, 5), b = nonZeroRand(1, 5);
+            return { q: `\\lim_{x \\to 0} \\frac{\\sin(${a}x)}{${b===1?'':b}x}`, a: simplifyFrac(a, b) };
+        }},
+        // Normal: タンジェントの極限 (Frac: true, Trig: true)
+        { diff: 'normal', frac: true, trig: true, gen: () => {
+            let a = nonZeroRand(-4, 4);
+            return { q: `\\lim_{x \\to 0} \\frac{\\tan(${a}x)}{x}`, a: `${a}` };
+        }},
+        // Hard: 1-cosの極限 (Frac: true, Trig: true)
+        { diff: 'hard', frac: true, trig: true, gen: () => {
+            let a = nonZeroRand(1, 4);
+            return { q: `\\lim_{x \\to 0} \\frac{1 - \\cos(${a}x)}{x^2}`, a: simplifyFrac(a*a, 2) };
+        }},
+        // Hard: ネイピア数絡みの極限 (Frac: true, Trig: false)
+        { diff: 'hard', frac: true, trig: false, gen: () => {
+            let a = nonZeroRand(1, 5), b = nonZeroRand(1, 4);
+            return { q: `\\lim_{x \\to 0} \\frac{e^{${a}x} - 1}{${b===1?'':b}x}`, a: simplifyFrac(a, b) };
+        }},
+        // Hard: はさみうち系 (Frac: false, Trig: true)
+        { diff: 'hard', frac: false, trig: true, gen: () => {
+            let a = nonZeroRand(-5, 5);
+            return { q: `\\lim_{x \\to \\infty} x \\sin\\left(\\frac{${a}}{x}\\right)`, a: `${a}` };
+        }}
+    ];
+
+    let currentQuestions = [];
+    let startTime;
+    let timerInterval;
+
+    // ゲーム開始処理
+    function startGame() {
+        const diff = document.getElementById('difficulty').value;
+        const allowFrac = document.getElementById('allow-frac').checked;
+        const allowTrig = document.getElementById('allow-trig').checked;
+
+        // 条件に合う問題ジェネレータをフィルタリング
+        let allowedGens = generators.filter(g => {
+            if (!allowFrac && g.frac) return false;
+            if (!allowTrig && g.trig) return false;
+            if (diff === 'easy' && g.diff !== 'easy') return false;
+            if (diff === 'normal' && g.diff === 'hard') return false; // NormalはEasy/Normal
+            // Hardは全て含む
+            return true;
+        });
+
+        // 万が一条件が厳しすぎて候補がない場合のフォールバック（緊急回避）
+        if (allowedGens.length === 0) {
+            allowedGens = [generators[0]]; // 単純な多項式を強制セット
+        }
+
+        currentQuestions = [];
+        const container = document.getElementById('questions-container');
+        container.innerHTML = '';
+
+        // 5問生成
+        for (let i = 0; i < 5; i++) {
+            const genInfo = allowedGens[rand(0, allowedGens.length - 1)];
+            const qData = genInfo.gen();
+            currentQuestions.push(qData);
+
+            const qDiv = document.createElement('div');
+            qDiv.className = 'question-card';
+            qDiv.innerHTML = `
+                <div class="math-display" id="math-${i}"></div>
+                <input type="text" id="ans-${i}" placeholder="解答を入力 (例: 3, -1/2)" autocomplete="off">
+            `;
+            container.appendChild(qDiv);
+            
+            // KaTeXで数式をレンダリング
+            katex.render(qData.q, document.getElementById(`math-${i}`), { displayMode: true });
+        }
+
+        switchScreen('game-screen');
+        
+        // タイマースタート
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 10); // 10msごとに更新
+    }
+
+    function updateTimer() {
+        const elapsed = Date.now() - startTime;
+        document.getElementById('timer').innerText = formatTime(elapsed);
+    }
+
+    function formatTime(ms) {
+        const minutes = Math.floor(ms / 60000);
+        const seconds = Math.floor((ms % 60000) / 1000);
+        const centi = Math.floor((ms % 1000) / 10);
+        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centi).padStart(2, '0')}`;
+    }
+
+    // 解答提出処理
+    function submitAnswers() {
+        clearInterval(timerInterval);
+        const timeTaken = Date.now() - startTime;
+        let score = 0;
+        const resultContainer = document.getElementById('result-details');
+        resultContainer.innerHTML = '';
+
+        for (let i = 0; i < 5; i++) {
+            const userAnsRaw = document.getElementById(`ans-${i}`).value;
+            // 空白除去と小文字化で判定ブレを防ぐ
+            const userAns = userAnsRaw.replace(/\s+/g, '').toLowerCase(); 
+            const correctAns = currentQuestions[i].a;
+            const isCorrect = (userAns === correctAns);
+
+            if (isCorrect) score++;
+
+            const resDiv = document.createElement('div');
+            resDiv.className = 'result-item';
+            resDiv.innerHTML = `
+                <div style="margin-bottom: 5px;"><strong>第 ${i + 1} 問:</strong> <span id="res-math-${i}"></span></div>
+                <div>あなたの解答: <strong>${userAnsRaw || '(未入力)'}</strong> ${isCorrect ? '<span class="correct-mark">⭕ 正解</span>' : `<span class="wrong-mark">❌ 不正解</span> (正解: ${correctAns})`}</div>
+            `;
+            resultContainer.appendChild(resDiv);
+            
+            // 結果画面でも数式を表示
+            katex.render(currentQuestions[i].q, document.getElementById(`res-math-${i}`), { displayMode: false });
+        }
+
+        document.getElementById('result-time-display').innerText = `タイム: ${formatTime(timeTaken)}`;
+        document.getElementById('result-score-display').innerText = `スコア: ${score} / 5 問正解`;
+
+        switchScreen('result-screen');
+    }
+
+    function resetGame() {
+        document.getElementById('timer').innerText = "00:00.00";
+        switchScreen('start-screen');
+    }
+
+    function switchScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+</script>
+
+</body>
+</html>
